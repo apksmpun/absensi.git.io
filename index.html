@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login dan Absensi</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+
+    h2 {
+      font-size: 24px;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    input[type="text"], input[type="password"], button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    #loginForm, #absensiPage {
+      max-width: 400px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: white;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media only screen and (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      input[type="text"], input[type="password"], button {
+        padding: 8px;
+        font-size: 16px;
+      }
+
+      button {
+        padding: 10px;
+      }
+
+      #absensiPage button {
+        margin: 5px 0;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    table, th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    @media only screen and (max-width: 600px) {
+      table, th, td {
+        font-size: 14px;
+      }
+    }
+  </style>
+  <script>
+    const apiUrl = 'https://script.google.com/macros/s/AKfycbzh2U3VcCjkBrz1tYt-YK4pKavlFU4Ih_cCKetC71FAVdtGjKoH8ozN9jxbSTGlHM9svw/exec'; // Ganti dengan URL Web Apps kamu
+
+    function login() {
+      var username = document.getElementById('username').value;
+      var password = document.getElementById('password').value;
+
+      fetch(`${apiUrl}?action=login&username=${username}&password=${password}`)
+        .then(response => response.text())
+        .then(response => {
+          if (response === "Login Success") {
+            localStorage.setItem('username', username);  // Simpan username di localStorage
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('absensiPage').classList.remove('hidden');
+            document.getElementById('usernameDisplay').innerText = username;
+            loadData();
+          } else {
+            document.getElementById('loginStatus').innerText = "Login Failed. Please try again.";
+          }
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('loginStatus').innerText = "Login Failed. Please try again.";
+        });
+    }
+
+    function absensi(action) {
+      var username = localStorage.getItem('username');  // Ambil username dari localStorage
+      if (username) {
+        fetch(`${apiUrl}?action=absensi&username=${username}&actionType=${action}`)
+          .then(response => response.text())
+          .then(response => {
+            document.getElementById('absensiStatus').innerText = response;  // Tampilkan hasil absensi
+          })
+          .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('absensiStatus').innerText = "Error mencatat absensi.";
+          });
+      } else {
+        document.getElementById('absensiStatus').innerText = "Tidak ada username yang ditemukan. Silakan login kembali.";
+      }
+    }
+
+    function logout() {
+      localStorage.removeItem('username');  // Hapus username dari localStorage
+      document.getElementById('loginForm').classList.remove('hidden');
+      document.getElementById('absensiPage').classList.add('hidden');
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+      document.getElementById('loginStatus').innerText = '';
+      document.getElementById('absensiStatus').innerText = '';
+    }
+
+    function loadData() {
+      var username = localStorage.getItem('username');
+      fetch(`${apiUrl}?action=getData&username=${username}`)
+        .then(response => response.json())
+        .then(data => {
+          var table = document.getElementById('dataTable');
+          table.innerHTML = '';
+
+          var header = document.createElement('tr');
+          var headers = ['Nama User', 'Waktu', 'Aksi', 'Status'];
+          headers.forEach(function(text) {
+            var th = document.createElement('th');
+            th.appendChild(document.createTextNode(text));
+            header.appendChild(th);
+          });
+          table.appendChild(header);
+
+          data.forEach(function(row) {
+            var tr = document.createElement('tr');
+            row.forEach(function(cell) {
+              var td = document.createElement('td');
+              td.appendChild(document.createTextNode(cell));
+              tr.appendChild(td);
+            });
+            table.appendChild(tr);
+          });
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
+    }
+
+    window.onload = function() {
+      var username = localStorage.getItem('username');  // Ambil username dari localStorage
+      if (username) {
+        document.getElementById('loginForm').classList.add('hidden');
+        document.getElementById('absensiPage').classList.remove('hidden');
+        document.getElementById('usernameDisplay').innerText = username;
+        loadData();
+      } else {
+        document.getElementById('loginForm').classList.remove('hidden');
+        document.getElementById('absensiPage').classList.add('hidden');
+      }
+    };
+  </script>
+</head>
+<body>
+  <div id="loginForm">
+    <h2>Login</h2>
+    <label for="username">Username:</label><br>
+    <input type="text" id="username" name="username"><br>
+    <label for="password">Password:</label><br>
+    <input type="password" id="password" name="password"><br><br>
+    <button onclick="login()">Login</button>
+    <p id="loginStatus" style="color:red;"></p>
+  </div>
+
+  <div id="absensiPage" class="hidden">
+    <h2>Welcome, <span id="usernameDisplay"></span></h2>
+    <button onclick="absensi('masuk')">Catat Masuk</button>
+    <button onclick="absensi('pulang')">Catat Pulang</button>
+    <button onclick="logout()">Logout</button>
+    <p id="absensiStatus" style="color:green;"></p>
+    <table id="dataTable"></table>
+  </div>
+</body>
+</html>
